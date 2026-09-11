@@ -27,7 +27,9 @@ void I2C_PeriClockControl(I2C_RegDef_t *pI2Cx, uint8_t EnorDi)
 }
 
 void I2C_Init(I2C_Handle_t* pI2CHandle)
-{ // just configure SCL I2C 
+{ // just configure SCL I2C
+    pI2CHandle->pI2Cx->CR1 &= ~(1 << I2C_CR1_PE);
+
     uint32_t timing_register = 0;
 
     timing_register = pI2CHandle->I2C_Config.I2C_SCLSpeed;
@@ -104,4 +106,31 @@ static void I2C_ConfigureSlaveConnection(I2C_Handle_t *pI2CHandle, uint8_t write
         pI2CHandle->pI2Cx->CR2 |= (1 << I2C_CR2_RD_WRN);
     }
     pI2CHandle->pI2Cx->CR2 |= (pI2CHandle->I2C_Config.I2C_AddressingMode << I2C_CR2_ADD0);
+}
+
+uint8_t I2C_MasterSendDataIT(I2C_Handle_t *pI2CHandle, uint8_t *pTxbuffer, uint32_t Len, uint8_t slaveAddr, uint8_t repeatedStart){
+    uint8_t state = pI2CHandle->TxStatus;
+    if(state != I2C_BUSY_IN_TX ){
+        pI2CHandle->pTxBuffer = pTxbuffer;
+
+        pI2CHandle->TxLen = Len;
+    
+        pI2CHandle->repeatedStart = repeatedStart;
+
+        pI2CHandle->TxStatus = I2C_BUSY_IN_TX;
+        
+        pI2CHandle->pI2Cx->CR1 |= (ENABLE << I2C_CR1_TXIE);
+        pI2CHandle->pI2Cx->CR1 |= (ENABLE << I2C_CR1_TCIE);
+
+        I2C_ConfigureSlaveConnection(pI2CHandle, 1);
+        
+        //I2C_GenerateStartCondition(pI2CHandle->pI2Cx);
+    }
+
+    return state;
+}
+
+
+void I2C_IRQHandling(I2C_Handle_t *pI2CHandle){
+    (void)pI2CHandle;
 }

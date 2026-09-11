@@ -21,6 +21,11 @@ typedef struct
     uint32_t TxLen;
     uint8_t *pRxBuffer;
     uint32_t RxLen;
+    uint8_t TxStatus;
+    uint8_t RxStatus;
+    uint32_t slaveAddr;
+    uint8_t repeatedStart;
+
 } I2C_Handle_t;
 
 void I2C_PeriClockControl(I2C_RegDef_t *pI2Cx, uint8_t EnorDi);
@@ -32,4 +37,14 @@ void I2C_Enable(I2C_Handle_t* pI2CHandle);
 void I2C_MasterSendData(I2C_Handle_t *pI2CHandle, uint8_t *pTxbuffer, uint32_t Len, uint8_t slaveAddr, uint8_t repeatedStart);
 
 void I2C_MasterReadData(I2C_Handle_t *pI2CHandle, uint8_t *pRxbuffer, uint32_t Len, uint8_t slaveAddr, uint8_t repeatedStart);
+
+uint8_t I2C_MasterSendDataIT(I2C_Handle_t *pI2CHandle, uint8_t *pTxbuffer, uint32_t Len, uint8_t slaveAddr, uint8_t repeatedStart);
+
+void I2C_IRQHandling(I2C_Handle_t *pI2CHandle);
+//I2C specific macros
+#define I2C_READY 0
+#define I2C_BUSY_IN_TX 1
+#define I2C_BUSY_IN_RX 2
+
+
 #endif
