@@ -11,6 +11,7 @@ typedef struct // for nucleo f3 I2C interface was completely redesigned comparin
     uint32_t I2C_SCLSpeed; // 0x2000090E -> standard mode 100kHz for HSI 8MHz
     uint8_t I2C_SlaveDeviceAddress;
     uint8_t I2C_AddressingMode; // 7-bit -> 0, 10-bit -> 1
+    uint8_t I2C_SlaveMode;
 } I2C_Config_t;
 
 typedef struct
@@ -25,7 +26,6 @@ typedef struct
     uint8_t RxStatus;
     uint32_t slaveAddr;
     uint8_t repeatedStart;
-
 } I2C_Handle_t;
 
 void I2C_PeriClockControl(I2C_RegDef_t *pI2Cx, uint8_t EnorDi);
@@ -37,6 +37,8 @@ void I2C_Enable(I2C_Handle_t* pI2CHandle);
 void I2C_MasterSendData(I2C_Handle_t *pI2CHandle, uint8_t *pTxbuffer, uint32_t Len, uint8_t slaveAddr, uint8_t repeatedStart);
 
 void I2C_MasterReadData(I2C_Handle_t *pI2CHandle, uint8_t *pRxbuffer, uint32_t Len, uint8_t slaveAddr, uint8_t repeatedStart);
+
+void I2C_ConfigureAsASlave(I2C_Handle_t *pI2CHandle);
 
 uint8_t I2C_MasterSendDataIT(I2C_Handle_t *pI2CHandle, uint8_t *pTxbuffer, uint32_t Len, uint8_t slaveAddr, uint8_t repeatedStart);
 uint8_t I2C_MasterReceiveDataIT(I2C_Handle_t *pI2CHandle, uint8_t *pRxbuffer, uint32_t Len, uint8_t slaveAddr, uint8_t repeatedStart);

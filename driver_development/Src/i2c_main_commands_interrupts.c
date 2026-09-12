@@ -51,6 +51,7 @@ int main(void){ // alternate function 4 for this pins
     I2C1Handle.I2C_Config.I2C_SCLSpeed = 0x2000090E;
     I2C1Handle.I2C_Config.I2C_SlaveDeviceAddress = 0x17;
     I2C1Handle.I2C_Config.I2C_AddressingMode = 0;
+    I2C1Handle.I2C_Config.I2C_SlaveMode = 0;
     I2C1Handle.TxStatus = I2C_READY;
     I2C1Handle.RxStatus = I2C_READY;
     GPIO_IRQConfig(IRQ_NO_I2C1_EV,5,ENABLE);

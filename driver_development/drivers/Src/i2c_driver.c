@@ -37,6 +37,18 @@ void I2C_Init(I2C_Handle_t* pI2CHandle)
     pI2CHandle->pI2Cx->TIMINGR = timing_register;
 }
 
+void I2C_ConfigureAsASlave(I2C_Handle_t *pI2CHandle){
+    if (pI2CHandle->I2C_Config.I2C_AddressingMode == 0){
+        pI2CHandle->pI2Cx->OAR1 |= (pI2CHandle->I2C_Config.I2C_SlaveDeviceAddress << (1 + I2C_OAR1_OA1));
+    } else {
+        pI2CHandle->pI2Cx->OAR1 |= pI2CHandle->I2C_Config.I2C_SlaveDeviceAddress << I2C_OAR1_OA1;
+    }
+    pI2CHandle->pI2Cx->OAR1 |= (pI2CHandle->I2C_Config.I2C_AddressingMode << I2C_OAR1_OA1MODE);
+    pI2CHandle->pI2Cx->OAR1 |= (ENABLE << I2C_OAR1_OA1EN);
+    pI2CHandle->pI2Cx->CR1 |= (ENABLE << I2C_CR1_ADDRIE);
+    pI2CHandle->pI2Cx->CR1 |= (ENABLE << I2C_CR1_STOPIE);
+    pI2CHandle->pI2Cx->CR1 |= (ENABLE << I2C_CR1_NACKIE);
+}
 
 void I2C_MasterSendData(I2C_Handle_t *pI2CHandle, uint8_t *pTxbuffer, uint32_t Len, uint8_t slaveAddr, uint8_t repeatedStart)
 {
@@ -177,7 +189,7 @@ static void i2c_txis_interrupt_handler(I2C_Handle_t *pI2CHandle){
     pI2CHandle->pTxBuffer++;
     pI2CHandle->TxLen--;
 
-    if(pI2CHandle->TxLen == 0){
+    if(pI2CHandle->TxLen == 0 && pI2CHandle->I2C_Config.I2C_SlaveMode == 0){
         if(!pI2CHandle->repeatedStart){
             I2C_GenerateStopCondition(pI2CHandle->pI2Cx);
         }
@@ -193,12 +205,34 @@ static void i2c_rxie_interrupt_handler(I2C_Handle_t *pI2CHandle){ // get one byt
         pI2CHandle->RxLen--;
     } 
     
-    if(pI2CHandle->RxLen == 0){
+    if(pI2CHandle->RxLen == 0 && pI2CHandle->I2C_Config.I2C_SlaveMode == 0){
         if(!pI2CHandle->repeatedStart) {
             I2C_GenerateStopCondition(pI2CHandle->pI2Cx);
         }
         I2C_CloseReception(pI2CHandle);
     }
+}
+
+static void i2c_slave_interrupt_handler(I2C_Handle_t *pI2CHandle){
+    uint32_t direction = pI2CHandle->pI2Cx->ISR & (1 << I2C_ISR_DIR); // 0=Slave enter receive mode, 1=Slave enter transmitter mode
+    if(direction == 0){
+        // slave mode enable receive interrupt
+        pI2CHandle->pI2Cx->CR1 &= ~(1<< I2C_CR1_TXIE);
+        pI2CHandle->pI2Cx->CR1 |= (1 << I2C_CR1_RXIE);
+    } else {
+        // slave mode enable transmit interrupt
+        pI2CHandle->pI2Cx->CR1 &= ~(1<< I2C_CR1_RXIE);
+        pI2CHandle->pI2Cx->CR1 |= (1 << I2C_CR1_TXIE);
+    }
+    pI2CHandle->pI2Cx->ICR |= (1 << I2C_ICR_ADDRCF); // clear address isr
+}
+
+static void i2c_slave_stop_interrupt_handler(I2C_Handle_t *pI2CHandle){
+    pI2CHandle->pI2Cx->ICR |= (1 << I2C_ICR_STOPCF);
+}
+
+static void i2c_slave_nackie_interrupt_handler(I2C_Handle_t *pI2CHandle){
+    pI2CHandle->pI2Cx->ICR |= (1 << I2C_ICR_NACKF);
 }
 
 void I2C_IRQHandling(I2C_Handle_t *pI2CHandle){
@@ -214,5 +248,23 @@ void I2C_IRQHandling(I2C_Handle_t *pI2CHandle){
     temp2 = pI2CHandle->pI2Cx->CR1 & (1 << I2C_CR1_RXIE);
     if(temp1 && temp2){
        i2c_rxie_interrupt_handler(pI2CHandle); 
+    }
+
+    temp1 = pI2CHandle->pI2Cx->ISR & (1 << I2C_ISR_ADDR);
+    temp2 = pI2CHandle->pI2Cx->CR1 & (1 << I2C_CR1_ADDRIE);
+    if(temp1 && temp2){
+        i2c_slave_interrupt_handler(pI2CHandle);
+    }
+
+    temp1 = pI2CHandle->pI2Cx->ISR & (1 << I2C_ISR_STOPF);    
+    temp2 = pI2CHandle->pI2Cx->CR1 & (1 << I2C_CR1_STOPIE);
+    if(temp1 && temp2){ 
+       i2c_slave_stop_interrupt_handler(pI2CHandle); 
+    }
+
+    temp1 = pI2CHandle->pI2Cx->ISR & (1 << I2C_ISR_NACKF);
+    temp2 = pI2CHandle->pI2Cx->CR1 & (1 << I2C_CR1_NACKIE);
+    if(temp1 && temp2){
+      i2c_slave_nackie_interrupt_handler(pI2CHandle);
     }
 }

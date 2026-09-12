@@ -83,7 +83,8 @@
                 "i2c_main_send.c",
                 "i2c_main_receive.c",
                 "i2c_main_commands.c",
-                "i2c_main_commands_interrupts.c"
+                "i2c_main_commands_interrupts.c",
+                "i2c_main_slave.c"
             ],
             "default": "spi_send_main.c"
         }

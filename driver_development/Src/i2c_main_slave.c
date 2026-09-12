@@ -11,6 +11,7 @@ int delay(void){
     for (volatile uint32_t i = 0; i < 500000; i++);
 }
 
+
 void config_gpio_onboard_button(GPIO_Handle_t *pGPIOHandle){
     GPIO_PeriClockControl(GPIOC,ENABLE);
     pGPIOHandle->pGPIOx = GPIOC;
@@ -40,7 +41,6 @@ GPIO_Handle_t gpioButton;
 GPIO_Handle_t i2cPins;
 I2C_Handle_t I2C1Handle;
 
-
 int main(void){
     config_gpio_onboard_button(&gpioButton);
     config_gpio_for_i2c1(&i2cPins);
@@ -51,24 +51,37 @@ int main(void){
     I2C1Handle.I2C_Config.I2C_SCLSpeed = 0x2000090E;
     I2C1Handle.I2C_Config.I2C_SlaveDeviceAddress = 0x17;
     I2C1Handle.I2C_Config.I2C_AddressingMode = 0;
-    I2C1Handle.I2C_Config.I2C_SlaveMode = 0;
+    I2C1Handle.TxStatus = I2C_READY;
+    I2C1Handle.RxStatus = I2C_READY;
+    I2C1Handle.I2C_Config.I2C_SlaveMode = 1;
+
+    GPIO_IRQConfig(IRQ_NO_I2C1_EV,5,ENABLE);
+    GPIO_IRQConfig(IRQ_NO_I2C1_ER,5,ENABLE);
 
     I2C_Init(&I2C1Handle);
 
-    I2C_Enable(&I2C1Handle);
-    char dataBuffer[252] = {0}; 
+    I2C_ConfigureAsASlave(&I2C1Handle);
+    char dataBuffer[252] = {0};
+    char sendBuffer[5] = {0x20,0x21,0x22,0x23,0x24};
+    I2C1Handle.pRxBuffer = dataBuffer;
+    I2C1Handle.RxLen = 3;
+    I2C1Handle.pTxBuffer = sendBuffer;
+    I2C1Handle.TxLen = 5;
 
-    while(1){
-        if(!GPIO_ReadFromInputPin(gpioButton.pGPIOx,gpioButton.GPIO_PinConfig.GPIO_PinNumber)){
-            uint8_t command = READ_LENGTH_COMMAND_CODE;
-            I2C_MasterSendData(&I2C1Handle, &command, 1, PICO_SLAVE_ADDRESS, 1);
-            uint8_t lengthOfDataToReceive = 0;
-            I2C_MasterReadData(&I2C1Handle, &lengthOfDataToReceive, 1, PICO_SLAVE_ADDRESS, 1);
-            command = READ_DATA_COMMAND_CODE;
-            I2C_MasterSendData(&I2C1Handle, &command, 1, PICO_SLAVE_ADDRESS, 1);
-            I2C_MasterReadData(&I2C1Handle, dataBuffer, lengthOfDataToReceive, PICO_SLAVE_ADDRESS, 0);
-            (void)dataBuffer; // act as a printf
-        }
-        delay();
+    I2C_Enable(&I2C1Handle);    
+
+    while (I2C1Handle.RxLen != 0){
+        // firstly wait for receiving bytes
     }
+
+    while( I2C1Handle.TxLen != 0){
+        // later send some bytes through interrupt        
+    }
+
+    (void)dataBuffer;
+    return 0;
+}
+
+void I2C1_EV_EXTI23_IRQHandler(void){
+    I2C_IRQHandling(&I2C1Handle);
 }

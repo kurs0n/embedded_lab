@@ -48,6 +48,7 @@ int main(void){
     I2C1Handle.I2C_Config.I2C_SCLSpeed = 0x2000090E;
     I2C1Handle.I2C_Config.I2C_SlaveDeviceAddress = 0x17;
     I2C1Handle.I2C_Config.I2C_AddressingMode = 0;
+    I2C1Handle.I2C_Config.I2C_SlaveMode = 0;
 
     I2C_Init(&I2C1Handle);
 
