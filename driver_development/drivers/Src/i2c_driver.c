@@ -93,6 +93,7 @@ static void I2C_GenerateStopCondition(I2C_RegDef_t *pI2Cx){
 }
 
 static void I2C_ConfigureSlaveConnection(I2C_Handle_t *pI2CHandle, uint8_t write){
+    pI2CHandle->pI2Cx->CR2 = 0;
     if(!pI2CHandle->I2C_Config.I2C_AddressingMode){
         pI2CHandle->pI2Cx->CR2 |= (pI2CHandle->I2C_Config.I2C_SlaveDeviceAddress << (I2C_CR2_SAAD + 1)); // for 7 bit address we ignore first bit
     } else {
@@ -100,7 +101,7 @@ static void I2C_ConfigureSlaveConnection(I2C_Handle_t *pI2CHandle, uint8_t write
     }
     if(write){
         pI2CHandle->pI2Cx->CR2 |= (pI2CHandle->TxLen << I2C_CR2_NBYTES);
-        pI2CHandle->pI2Cx->CR2 |= (0 << I2C_CR2_RD_WRN);
+        pI2CHandle->pI2Cx->CR2 &= ~(1 << I2C_CR2_RD_WRN);
     } else { 
         pI2CHandle->pI2Cx->CR2 |= (pI2CHandle->RxLen << I2C_CR2_NBYTES);
         pI2CHandle->pI2Cx->CR2 |= (1 << I2C_CR2_RD_WRN);
@@ -120,17 +121,98 @@ uint8_t I2C_MasterSendDataIT(I2C_Handle_t *pI2CHandle, uint8_t *pTxbuffer, uint3
         pI2CHandle->TxStatus = I2C_BUSY_IN_TX;
         
         pI2CHandle->pI2Cx->CR1 |= (ENABLE << I2C_CR1_TXIE);
-        pI2CHandle->pI2Cx->CR1 |= (ENABLE << I2C_CR1_TCIE);
 
         I2C_ConfigureSlaveConnection(pI2CHandle, 1);
         
-        //I2C_GenerateStartCondition(pI2CHandle->pI2Cx);
+        I2C_GenerateStartCondition(pI2CHandle->pI2Cx);
     }
 
     return state;
 }
 
+uint8_t I2C_MasterReceiveDataIT(I2C_Handle_t *pI2CHandle, uint8_t *pRxbuffer, uint32_t Len, uint8_t slaveAddr, uint8_t repeatedStart){
+    uint8_t state = pI2CHandle->RxStatus;
+
+    if(state != I2C_BUSY_IN_RX){
+        pI2CHandle->pRxBuffer = pRxbuffer;
+        
+        pI2CHandle->RxLen = Len;
+        
+        pI2CHandle->repeatedStart = repeatedStart;
+        
+        pI2CHandle->RxStatus = I2C_BUSY_IN_RX;
+
+        pI2CHandle->pI2Cx->CR1 |= (ENABLE << I2C_CR1_RXIE);
+
+        I2C_ConfigureSlaveConnection(pI2CHandle, 0);
+        
+        I2C_GenerateStartCondition(pI2CHandle->pI2Cx);
+    }
+
+    return state;
+}
+
+void I2C_CloseTransmission(I2C_Handle_t *pI2CHandle){
+    pI2CHandle->pTxBuffer = NULL;
+    pI2CHandle->TxLen = 0;
+    pI2CHandle->repeatedStart = 0;
+
+    pI2CHandle->TxStatus = I2C_READY;
+
+    pI2CHandle->pI2Cx->CR1 &= ~(1 << I2C_CR1_TXIE);
+}
+
+void I2C_CloseReception(I2C_Handle_t *pI2CHandle){
+    pI2CHandle->pRxBuffer = NULL;
+    pI2CHandle->RxLen = 0;
+    pI2CHandle->repeatedStart = 0;
+
+    pI2CHandle->RxStatus = I2C_READY;
+
+    pI2CHandle->pI2Cx->CR1 &= ~(1 << I2C_CR1_RXIE);
+}
+
+static void i2c_txis_interrupt_handler(I2C_Handle_t *pI2CHandle){
+    pI2CHandle->pI2Cx->TXDR=*pI2CHandle->pTxBuffer;
+    pI2CHandle->pTxBuffer++;
+    pI2CHandle->TxLen--;
+
+    if(pI2CHandle->TxLen == 0){
+        if(!pI2CHandle->repeatedStart){
+            I2C_GenerateStopCondition(pI2CHandle->pI2Cx);
+        }
+        I2C_CloseTransmission(pI2CHandle);
+    }
+}
+
+
+static void i2c_rxie_interrupt_handler(I2C_Handle_t *pI2CHandle){ // get one byte at the time. WE SHOULDN'T HAVE LOOPS in interrupts. They should be non blocking!!!
+    if(pI2CHandle->RxLen > 0){
+        *pI2CHandle->pRxBuffer = pI2CHandle->pI2Cx->RXDR;
+        pI2CHandle->pRxBuffer++;
+        pI2CHandle->RxLen--;
+    } 
+    
+    if(pI2CHandle->RxLen == 0){
+        if(!pI2CHandle->repeatedStart) {
+            I2C_GenerateStopCondition(pI2CHandle->pI2Cx);
+        }
+        I2C_CloseReception(pI2CHandle);
+    }
+}
 
 void I2C_IRQHandling(I2C_Handle_t *pI2CHandle){
-    (void)pI2CHandle;
+    uint8_t temp1, temp2;
+
+    temp1 = pI2CHandle->pI2Cx->ISR & (1 << I2C_ISR_TXIS);
+    temp2 = pI2CHandle->pI2Cx->CR1 & (1 << I2C_CR1_TXIE);
+    if(temp1 && temp2){
+        i2c_txis_interrupt_handler(pI2CHandle);
+    }
+
+    temp1 = pI2CHandle->pI2Cx->ISR & (1 << I2C_ISR_RXNE); 
+    temp2 = pI2CHandle->pI2Cx->CR1 & (1 << I2C_CR1_RXIE);
+    if(temp1 && temp2){
+       i2c_rxie_interrupt_handler(pI2CHandle); 
+    }
 }

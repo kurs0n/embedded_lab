@@ -59,14 +59,30 @@ int main(void){ // alternate function 4 for this pins
     I2C_Init(&I2C1Handle);
 
     I2C_Enable(&I2C1Handle);
-    char dataBuffer[252] = {0}; 
-
+    char dataBuffer[252] = {0};
+    uint8_t lengthOfDataToReceive = 0;
     while(1){
         if(!GPIO_ReadFromInputPin(gpioButton.pGPIOx,gpioButton.GPIO_PinConfig.GPIO_PinNumber)){
             uint8_t command = READ_LENGTH_COMMAND_CODE;
             I2C_MasterSendDataIT(&I2C1Handle, &command, 1, PICO_SLAVE_ADDRESS, 0);
-            uint8_t lengthOfDataToReceive = 0;
-            (void)dataBuffer; // act as a printf
+            while(I2C1Handle.TxStatus == I2C_BUSY_IN_TX){
+                // wait for interrupt
+            }
+            I2C_MasterReceiveDataIT(&I2C1Handle, &lengthOfDataToReceive, 1, PICO_SLAVE_ADDRESS, 0);
+            while(I2C1Handle.RxStatus == I2C_BUSY_IN_RX){
+                // wait for interrupt
+            }
+            command = READ_DATA_COMMAND_CODE;
+            I2C_MasterSendDataIT(&I2C1Handle, &command, 1, PICO_SLAVE_ADDRESS, 0);
+            while(I2C1Handle.TxStatus == I2C_BUSY_IN_TX){
+                // wait for interrupt
+            }
+            I2C_MasterReceiveDataIT(&I2C1Handle, dataBuffer, lengthOfDataToReceive, PICO_SLAVE_ADDRESS, 0);
+            while(I2C1Handle.RxStatus == I2C_BUSY_IN_RX){
+                // wait for interrupt
+            }
+
+            (void)dataBuffer;
         }
         delay();
     }
