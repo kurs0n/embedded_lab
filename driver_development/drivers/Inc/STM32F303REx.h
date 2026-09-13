@@ -160,6 +160,21 @@ typedef struct
     _vo uint32_t TXDR;
 } I2C_RegDef_t;
 
+typedef struct
+{
+    _vo uint32_t CR1;
+    _vo uint32_t CR2;
+    _vo uint32_t CR3;
+    _vo uint32_t BRR;
+    _vo uint32_t GTPR;
+    _vo uint32_t RTOR;
+    _vo uint32_t RQR;
+    _vo uint32_t ISR;
+    _vo uint32_t ICR;
+    _vo uint32_t RDR;
+    _vo uint32_t TDR;
+} USART_RegDef_t;
+
 typedef struct{
     _vo uint32_t CR; // RCC clock control register
     _vo uint32_t CFGR; // RCC clock configuration register
@@ -463,6 +478,125 @@ typedef struct{
 #define I2C2 ((I2C_RegDef_t *) I2C2_BASEADDR)
 
 /* Reset I2Cx peripherials */
+
+// USART Bit positions of USART peripherials
+// Control Register 1
+#define USART_CR1_UE        0   
+#define USART_CR1_UESM      1   
+#define USART_CR1_RE        2   
+#define USART_CR1_TE        3  
+#define USART_CR1_IDLEIE    4  
+#define USART_CR1_RXNEIE    5   
+#define USART_CR1_TCIE      6  
+#define USART_CR1_TXEIE     7  
+#define USART_CR1_PEIE      8 
+#define USART_CR1_PS        9 
+#define USART_CR1_PCE       10
+#define USART_CR1_WAKE      11
+#define USART_CR1_M0        12
+#define USART_CR1_MME       13
+#define USART_CR1_CMIE      14 
+#define USART_CR1_OVER8     15 
+#define USART_CR1_DEDT      16  
+#define USART_CR1_DEAT      21 
+#define USART_CR1_RTOIE     26 
+#define USART_CR1_EOBIE     27 
+#define USART_CR1_M1        28
+
+// Control Register 2
+#define USART_CR2_ADDM7     4   // 7-bit Address Detection/4-bit Address Detection
+#define USART_CR2_LBDL      5   // LIN break detection length
+#define USART_CR2_LBDIE     6   // LIN break detection interrupt enable
+#define USART_CR2_LBCL      8   // Last bit clock pulse
+#define USART_CR2_CPHA      9   // Clock phase
+#define USART_CR2_CPOL      10  // Clock polarity
+#define USART_CR2_CLKEN     11  // Clock enable
+#define USART_CR2_STOP      12  // STOP bits
+#define USART_CR2_LINEN     14  // LIN mode enable
+#define USART_CR2_SWAP      15  // Swap TX/RX pins
+#define USART_CR2_RXINV     16  // RX pin active level inversion
+#define USART_CR2_TXINV     17  // TX pin active level inversion
+#define USART_CR2_DATAINV   18  // Binary data inversion
+#define USART_CR2_MSBFIRST  19  // Most significant bit first
+#define USART_CR2_ABREN     20  // Auto baud rate enable
+#define USART_CR2_ABRMOD    21  // Auto baud rate mode
+#define USART_CR2_RTOEN     23  // Receiver timeout enable
+#define USART_CR2_ADD       24  // Address of the USART node
+
+// Control Register 3
+#define USART_CR3_EIE       0   // Error interrupt enable
+#define USART_CR3_IREN      1   // IrDA mode enable
+#define USART_CR3_IRLP      2   // IrDA low-power
+#define USART_CR3_HDSEL     3   // Half-duplex selection
+#define USART_CR3_NACK      4   // Smartcard NACK enable
+#define USART_CR3_SCEN      5   // Smartcard mode enable
+#define USART_CR3_DMAR      6   // DMA enable receiver
+#define USART_CR3_DMAT      7   // DMA enable transmitter
+#define USART_CR3_RTSE      8   // RTS enable
+#define USART_CR3_CTSE      9   // CTS enable
+#define USART_CR3_CTSIE     10  // CTS interrupt enable
+#define USART_CR3_ONEBIT    11  // One sample bit method enable
+#define USART_CR3_OVRDIS    12  // Overrun Disable
+#define USART_CR3_DDRE      13  // DMA Disable on Reception Error
+#define USART_CR3_DEM       14  // Driver enable mode
+#define USART_CR3_DEP       15  // Driver enable polarity selection
+#define USART_CR3_SCARCNT   17  // Smartcard auto-retry count (bity 17-19)
+#define USART_CR3_WUS       20  // Wakeup from Stop mode flag selection (bity 20-21)
+#define USART_CR3_WUFIE     22  // Wakeup from Stop mode interrupt enable
+
+// GTPR 
+#define USART_GTPR_PSC 0
+#define USART_GTPR_GT 8
+
+// RTOR
+#define USART_RTOR_RTO 0
+#define USART_RTOR_BLEN 24
+
+//ISR
+#define USART_ISR_PE        0
+#define USART_ISR_FE        1
+#define USART_ISR_NF        2
+#define USART_ISR_ORE       3
+#define USART_ISR_IDLE      4
+#define USART_ISR_RXNE      5
+#define USART_ISR_TC        6
+#define USART_ISR_TXE       7
+#define USART_ISR_LBDF      8
+#define USART_ISR_CTSIF     9
+#define USART_ISR_CTS       10
+#define USART_ISR_RTOF      11
+#define USART_ISR_EOBF      12
+#define USART_ISR_ABRE      14
+#define USART_ISR_ABRF      15
+#define USART_ISR_BUSY      16
+#define USART_ISR_CMF       17
+#define USART_ISR_SBKF      18
+#define USART_ISR_RWU       19
+#define USART_ISR_WUF       20
+#define USART_ISR_TEACK     21
+#define USART_ISR_REACK     22
+
+// ICR 
+#define USART_ICR_PECF      0
+#define USART_ICR_FECF      1
+#define USART_ICR_NCF       2
+#define USART_ICR_ORECF     3
+#define USART_ICR_IDLECF    4
+#define USART_ICR_TCCF      6
+#define USART_ICR_TCBGTCF   7
+#define USART_ICR_LBDCF     8
+#define USART_ICR_CTSCF     9
+#define USART_ICR_RTOCF     11
+#define USART_ICR_EOBCF     12
+#define USART_ICR_CMCF      17
+#define USART_ICR_WUCF      20
+
+//USART Base addresses
+#define USART1 ((USART_RegDef_t *)USART1_BASEADDR)
+#define USART2 ((USART_RegDef_t *)USART2_BASEADDR)
+#define USART3 ((USART_RegDef_t *)USART3_BASEADDR)
+#define UART4 ((USART_RegDef_t *)UART4_BASEADDR)
+#define UART5 ((USART_RegDef_t *)UART5_BASEADDR)
 
 
 /*  IRQ numbers
