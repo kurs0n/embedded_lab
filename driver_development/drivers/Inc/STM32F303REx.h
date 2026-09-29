@@ -598,7 +598,6 @@ typedef struct{
 #define UART4 ((USART_RegDef_t *)UART4_BASEADDR)
 #define UART5 ((USART_RegDef_t *)UART5_BASEADDR)
 
-
 /*  IRQ numbers
 */
 
